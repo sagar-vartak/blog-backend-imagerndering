@@ -53,12 +53,12 @@ mongoose.connect(
   }
 );
 
-/* app.use("/", (req, res, next) => {
+app.get("/", (req, res, next) => {
   res.status(200).json({
     message: "Welcome To server",
   });
 });
- */
+
 app.get("/all", (req, res) => {
   Blogs.find()
     .then((docs) => {
@@ -78,13 +78,7 @@ app.get("/all", (req, res) => {
           };
         }),
       };
-      //   if (docs.length >= 0) {
       res.status(200).json(response);
-      //   } else {
-      //       res.status(404).json({
-      //           message: 'No entries found'
-      //       });
-      //   }
     })
     .catch((err) => {
       console.log(err);
@@ -92,8 +86,6 @@ app.get("/all", (req, res) => {
         error: err,
       });
     });
-  /*  console.log(allblogs);
-  res.send(allblogs); */
 });
 
 app.post("/add", upload.single("imageUrl"), (req, res, next) => {
@@ -169,7 +161,6 @@ app.get("/:blogId", (req, res) => {
 
 app.delete("/:blogId", (req, res) => {
   const id = req.params.blogId;
-  //Blogs.findById(id)
   Blogs.deleteOne({ blogId: id })
     .exec()
     .then((doc) => {
