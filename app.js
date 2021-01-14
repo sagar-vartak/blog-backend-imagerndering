@@ -1,6 +1,8 @@
 const express = require("express");
 const cloudinary = require("cloudinary").v2;
+const cors = require("cors");
 const app = express();
+app.use(cors());
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 dotenv.config({ path: "./config.env" });
