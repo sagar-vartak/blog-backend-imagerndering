@@ -1,4 +1,5 @@
 const express = require("express");
+const cloudinary = require("cloudinary").v2;
 const app = express();
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
@@ -6,8 +7,14 @@ dotenv.config({ path: "./config.env" });
 const Blogs = require("./data/blog");
 
 const multer = require("multer");
-
+var image = "";
 app.use("/images", express.static("images"));
+
+cloudinary.config({
+  cloud_name: process.env.NAME,
+  api_key: process.env.API_KEY,
+  api_secret: process.env.API_SECRET,
+});
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -34,7 +41,7 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage: storage,
   limits: {
-    fileSize: 1024 * 1024 * 5,
+    fileSize: 1024 * 1024 * 10,
   },
   fileFilter: fileFilter,
 });
@@ -90,40 +97,45 @@ app.get("/all", (req, res) => {
 
 app.post("/add", upload.single("imageUrl"), (req, res, next) => {
   console.log(req.file);
-  let newBlog = new Blogs({
-    blogId: mongoose.Types.ObjectId().toString(),
-    author: req.body.author,
-    title: req.body.title,
-    content: req.body.content,
-    imageUrl: req.file.path,
-  });
-  newBlog
-    .save()
-    .then((blog) => {
-      console.log("blog", blog);
-      res.status(201).json({
-        message: "Blog Created Sucessfully",
-        createdBlogs: {
-          _id: blog._id,
-          blogId: blog.blogId,
-          author: blog.author,
-          title: blog.title,
-          content: blog.content,
-          imageUrl: req.file.path,
-          request: {
-            message: "IF ON LOCAL HOST THEN REQUEST",
-            type: "GET",
-            url: `http://localhost:${process.env.PORT}/` + req.file.path,
-          },
-        },
-      });
-    })
-    .catch((err) => {
-      console.log(err);
-      res.status(500).json({
-        error: err,
-      });
+  cloudinary.uploader.upload(req.file.path, function (error, result) {
+    console.log(result, error);
+    image = result.secure_url;
+    let newBlog = new Blogs({
+      blogId: mongoose.Types.ObjectId().toString(),
+      author: req.body.author,
+      title: req.body.title,
+      content: req.body.content,
+      imageUrl: result.secure_url,
     });
+    newBlog
+      .save()
+      .then((blog) => {
+        console.log("blog", blog);
+        res.status(201).json({
+          message: "Blog Created Sucessfully",
+          createdBlogs: {
+            _id: blog._id,
+            blogId: blog.blogId,
+            author: blog.author,
+            title: blog.title,
+            content: blog.content,
+            imageUrl: result.secure_url,
+            request: {
+              message: "IF ON LOCAL HOST THEN REQUEST",
+              type: "GET",
+              url: `http://localhost:${process.env.PORT}/` + req.file.path,
+              image: result.secure_url,
+            },
+          },
+        });
+      })
+      .catch((err) => {
+        console.log(err);
+        res.status(500).json({
+          error: err,
+        });
+      });
+  });
 });
 
 app.get("/:blogId", (req, res) => {
